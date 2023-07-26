@@ -19,123 +19,99 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electric_rubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "0.0.1";
+        public const string PLUGIN_VERSION = "0.2";
 
-        Player p;
+        const float rock_replace_rate = 1.0f;
 
         public void OnEnable()
         {
-            On.Player.Update += PlayerUpdateHook;
-            On.AbstractPhysicalObject.Realize += ItemRealizeHook;
-            On.Room.Loaded += RoomLoadedPatch;
             On.ItemSymbol.SymbolDataFromItem += ItemSymbol_SymbolDataFromItem;
             On.ItemSymbol.ColorForItem += ItemSymbol_ColorForItem;
             On.ItemSymbol.SpriteNameForItem += ItemSymbol_SpriteNameForItem;
             On.SaveState.AbstractPhysicalObjectFromString += SaveState_AbstractPhysicalObjectFromString;
-            //On.Rock.InitiateSprites += RockHook;
+
+            On.Room.AddObject += AddObjHook;
+
+            ElectricRubbishExtnum.RegisterValues();
         }
+        public void OnDisable()
+        {
+            ElectricRubbishExtnum.UnregisterValues();
+        }
+        //TODO: 
+        /*
+        public static OptionInterface LoadIO()
+        {
+            return new ElectricRubbishOptions();
+        }
+
+        public class ElectricRubbishOptions: OptionInterface{ 
+            public ElectricRubbishOptions()
+            {
+                config = new ConfigHolder(this);
+                config.Bind<float>("Rock Replace Rate", 0.3f);
+            }
+        }
+        */
+
 
         private IconSymbol.IconSymbolData? ItemSymbol_SymbolDataFromItem(On.ItemSymbol.orig_SymbolDataFromItem orig, AbstractPhysicalObject item)
         {
-            if(item is ElectricRubbishAbstract)
+            if (item is ElectricRubbishAbstract)
             {
-                return orig(new AbstractPhysicalObject(item.world, AbstractPhysicalObject.AbstractObjectType.Rock, null, item.pos, item.ID));
+                return new IconSymbol.IconSymbolData() { itemType = ElectricRubbishExtnum.ElectricRubbishAbstract };
             }
             return orig(item);
-        }
-
-        private AbstractPhysicalObject SaveState_AbstractPhysicalObjectFromString(On.SaveState.orig_AbstractPhysicalObjectFromString orig, World world, string objString)
-        {
-            var data = objString.Split(new[] { "<oA>" }, StringSplitOptions.None);
-            var type = data[1];
-            if (type == "ElectricRubbish")
-            {
-                return new ElectricRubbishAbstract(world, ElectricRubbishExtnum.ElectricRubbishAbstract, null, WorldCoordinate.FromString(data[2]), EntityID.FromString(data[0]), int.Parse(data[3]));
-            }
-            return orig(world, objString);
-        }
-
-        private string ItemSymbol_SpriteNameForItem(On.ItemSymbol.orig_SpriteNameForItem orig, AbstractPhysicalObject.AbstractObjectType itemType, int intData)
-        {
-            Debug.Log(itemType);
-            if(itemType == ElectricRubbishExtnum.ElectricRubbishAbstract)
-            {
-                return orig(AbstractPhysicalObject.AbstractObjectType.Rock, intData);
-            }
-            return orig(itemType, intData);
         }
 
         private Color ItemSymbol_ColorForItem(On.ItemSymbol.orig_ColorForItem orig, AbstractPhysicalObject.AbstractObjectType itemType, int intData)
         {
             if (itemType == ElectricRubbishExtnum.ElectricRubbishAbstract)
             {
+                return Custom.HSL2RGB(UnityEngine.Random.Range(0.6f, 0.65f), UnityEngine.Random.Range(0.85f, 95f), UnityEngine.Random.Range(0.35f, 0.55f));
+            }
+            return orig(itemType, intData);
+        }
+
+        private string ItemSymbol_SpriteNameForItem(On.ItemSymbol.orig_SpriteNameForItem orig, AbstractPhysicalObject.AbstractObjectType itemType, int intData)
+        {
+            if (itemType == ElectricRubbishExtnum.ElectricRubbishAbstract)
+            {
+                Debug.Log(orig(AbstractPhysicalObject.AbstractObjectType.Rock, intData));
                 return orig(AbstractPhysicalObject.AbstractObjectType.Rock, intData);
             }
             return orig(itemType, intData);
         }
 
-
-        /*
-private void RockHook(On.Rock.orig_InitiateSprites orig, Rock self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
-{
-   self.Destroy();
-}*/
-
-        private void RoomLoadedPatch(On.Room.orig_Loaded orig, Room room)
+        private AbstractPhysicalObject SaveState_AbstractPhysicalObjectFromString(On.SaveState.orig_AbstractPhysicalObjectFromString orig, World world, string objString)
         {
-            if (room.abstractRoom.firstTimeRealized)
+            //samples
+            //ID.- 341.4782 < oA > Spear < oA > SU_A24.4.15.1 < oA > 2 < oA > 0 < oA > 0 < oA > 0 < oA > 0 < oA > 0
+            //ID.- 1.4778 < oA > ElectricRubbishAbstract < oA > SU_S01.24.16.1
+            var data = objString.Split(new[] { "<oA>" }, StringSplitOptions.None);
+            var type = data[1];
+            if (type == "ElectricRubbishAbstract")
             {
-                if (!room.abstractRoom.shelter && !room.abstractRoom.gate && room.game != null && (!room.game.IsArenaSession || room.game.GetArenaGameSession.GameTypeSetup.levelItems))
-                {
-                    for (int i = 100; i >= 0; i--)
-                    {
-                        IntVector2 spawnTile = room.RandomTile();
-                        if (!room.GetTile(spawnTile).Solid)
-                        {
-                            bool canSpawnHere = true;
-                            for (int j = -1; j < 2; j++)
-                            {
-                                if (!room.GetTile(spawnTile + new IntVector2(j, -1)).Solid)
-                                {
-                                    canSpawnHere = false;
-                                    break;
-                                }
-                            }
-
-                            if (canSpawnHere)
-                            {
-                                p.AddQuarterFood();
-                                EntityID newID = room.game.GetNewID(-room.abstractRoom.index);
-                                ElectricRubbishAbstract entity = new ElectricRubbishAbstract(room.world, ElectricRubbishExtnum.ElectricRubbishAbstract, null, new WorldCoordinate(room.abstractRoom.index, spawnTile.x, spawnTile.y, -1), newID, 2);
-                                room.abstractRoom.AddEntity(entity);
-                            }
-                        }
-                    }
-                }
+                int customData = data.Length >= 4 ? int.Parse(data[3]) : 0;
+                return new ElectricRubbishAbstract(world, WorldCoordinate.FromString(data[2]), EntityID.FromString(data[0]), customData);
             }
-
-            orig(room);
+            return orig(world, objString);
         }
 
-        private void ItemRealizeHook(On.AbstractPhysicalObject.orig_Realize orig, AbstractPhysicalObject self)
+        
+
+        private void AddObjHook(On.Room.orig_AddObject orig, Room self, UpdatableAndDeletable obj)
         {
-            orig(self);
-            if(self.realizedObject is Rock)
+
+            if(obj.GetType() == typeof(Rock) && obj is Rock r && UnityEngine.Random.value < rock_replace_rate)
             {
-                self.Destroy();
-                /*
-                EntityID new_id = self.Room.realizedRoom.game.GetNewID(-self.Room.index);
-                var e = new AbstractPhysicalObject(self.Room.world, ElectricRubbishExtnum.ElectricRubbish, null, self.pos, new_id);
-                self.Room.AddEntity(e);*/
+                ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), 2);
+                abstr.realizedObject = (PhysicalObject)new ElectricRubbish(abstr, self.world); ;
+                abstr.RealizeInRoom();
+                orig(self, abstr.realizedObject);
+                obj.Destroy();
             }
-        }
-
-
-
-        void PlayerUpdateHook(On.Player.orig_Update orig, Player self, bool eu)
-        {
-            p = self;
-            orig(self, eu);
+            orig(self, obj);
         }
     }
 }

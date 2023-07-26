@@ -12,24 +12,6 @@ using MoreSlugcats;
 
 namespace ElectricRubbish
 {
-    public static class ElectricRubbishExtnum
-    {
-        public static AbstractPhysicalObject.AbstractObjectType ElectricRubbishAbstract;
-    }
-
-    public class ElectricRubbishAbstract : AbstractPhysicalObject
-    {
-        public int electricCharge = 2;
-        public ElectricRubbishAbstract(World world, AbstractObjectType type, PhysicalObject realizedObject, WorldCoordinate pos, EntityID ID, int electricCharge) : base(world, type, realizedObject, pos, ID)
-        {
-            this.electricCharge = electricCharge;
-        }
-        public override void Realize()
-        {
-            realizedObject = new ElectricRubbish(this, world);
-            base.Realize();
-        }
-    }
 
     public class ElectricRubbish : Rock
     {
@@ -96,7 +78,8 @@ namespace ElectricRubbish
         {
             if (rubbishAbstract.electricCharge > 0)
             {
-                for (int i = 0; i < 5 * rubbishAbstract.electricCharge; i++)
+                int numSparks = rubbishAbstract.electricCharge > 1 ? 10 : 2;
+                for (int i = 0; i < numSparks; i++)
                 {
                     Vector2 vector = Custom.RNV();
                     room.AddObject(new Spark(sparkPoint + vector * UnityEngine.Random.value * 20f, vector * Mathf.Lerp(2f, 5f, UnityEngine.Random.value), Color.white, null, 4, 18));
@@ -192,18 +175,9 @@ namespace ElectricRubbish
             if (result.obj != null)
             {
                 Electrocute(result.obj);
-                Debug.Log("HitSomething with" + result.obj.ToString());
-                Debug.Log(rubbishAbstract.electricCharge);
                 Spark();
             }
             return base.HitSomething(result, eu);
-        }
-
-        public override void HitSomethingWithoutStopping(PhysicalObject obj, BodyChunk chunk, Appendage appendage)
-        {
-            Debug.Log("hitsomething with" + obj.ToString());
-            base.HitSomethingWithoutStopping(obj, chunk, appendage);
-            Spark();
         }
 
         public Vector2 PointAlongSpear(RoomCamera.SpriteLeaser sLeaser, float percent)
@@ -239,7 +213,7 @@ namespace ElectricRubbish
                 sLeaser.sprites[0].color = Color.Lerp(electricColor, Color.white, rubbishAbstract.electricCharge * Mathf.Abs(Mathf.Sin(fluxTimer)));
             }
 
-            sparkPoint = PointAlongSpear(sLeaser, 0.9f);
+            sparkPoint = PointAlongSpear(sLeaser, 0.5f);
         }
 
         public override void ApplyPalette(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, RoomPalette palette)
@@ -251,34 +225,8 @@ namespace ElectricRubbish
 
         public override void AddToContainer(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, FContainer newContatiner)
         {
-            if (newContatiner == null)
-            {
-                newContatiner = rCam.ReturnFContainer("Items");
-            }
-
-            sLeaser.sprites[0].RemoveFromContainer();
-            newContatiner.AddChild(sLeaser.sprites[0]);
-        }
-
-        public void ShortCircuit()
-        {
-            if (rubbishAbstract.electricCharge > 0)
-            {
-                Vector2 pos = base.firstChunk.pos;
-                room.AddObject(new Explosion.ExplosionLight(pos, 40f, 1f, 2, electricColor));
-                for (int i = 0; i < 8; i++)
-                {
-                    Vector2 vector = Custom.RNV();
-                    room.AddObject(new Spark(pos + vector * UnityEngine.Random.value * 10f, vector * Mathf.Lerp(6f, 18f, UnityEngine.Random.value), electricColor, null, 4, 18));
-                }
-
-                room.AddObject(new ShockWave(pos, 30f, 0.035f, 2));
-                room.PlaySound(SoundID.Fire_Spear_Pop, pos);
-                room.PlaySound(SoundID.Firecracker_Bang, pos);
-                room.InGameNoise(new InGameNoise(pos, 800f, this, 1f));
-                vibrate = Math.Max(vibrate, 6);
-                rubbishAbstract.electricCharge = 0;
-            }
+            Debug.Log("adding to container");
+            base.AddToContainer(sLeaser, rCam, newContatiner);
         }
 
         public void ExplosiveShortCircuit()
@@ -317,9 +265,9 @@ namespace ElectricRubbish
 
         public bool CheckElectricCreature(Creature otherObject)
         {
-            if (!(otherObject is Centipede) && !(otherObject is MoreSlugcats.BigJellyFish))
+            if (!(otherObject is Centipede) && !(otherObject is BigJellyFish))
             {
-                return otherObject is MoreSlugcats.Inspector;
+                return otherObject is Inspector;
             }
 
             return true;
