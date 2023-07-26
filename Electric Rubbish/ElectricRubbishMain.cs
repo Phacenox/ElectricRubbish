@@ -27,22 +27,60 @@ namespace ElectricRubbish
         {
             On.Player.Update += PlayerUpdateHook;
             On.AbstractPhysicalObject.Realize += ItemRealizeHook;
-            On.PhysicalObject.Grabbed += ItemGrabbedHook;
             On.Room.Loaded += RoomLoadedPatch;
+            On.ItemSymbol.SymbolDataFromItem += ItemSymbol_SymbolDataFromItem;
+            On.ItemSymbol.ColorForItem += ItemSymbol_ColorForItem;
+            On.ItemSymbol.SpriteNameForItem += ItemSymbol_SpriteNameForItem;
+            On.SaveState.AbstractPhysicalObjectFromString += SaveState_AbstractPhysicalObjectFromString;
+            //On.Rock.InitiateSprites += RockHook;
         }
 
-
-        private void ItemGrabbedHook(On.PhysicalObject.orig_Grabbed orig, PhysicalObject self, Creature.Grasp grasp)
+        private IconSymbol.IconSymbolData? ItemSymbol_SymbolDataFromItem(On.ItemSymbol.orig_SymbolDataFromItem orig, AbstractPhysicalObject item)
         {
-            orig(self, grasp);
-            if(self is ElectricRubbish)
+            if(item is ElectricRubbishAbstract)
             {
-                /*
-                grasp.Release();
-                Electrocute(p, self.room);*/
+                return orig(new AbstractPhysicalObject(item.world, AbstractPhysicalObject.AbstractObjectType.Rock, null, item.pos, item.ID));
             }
-
+            return orig(item);
         }
+
+        private AbstractPhysicalObject SaveState_AbstractPhysicalObjectFromString(On.SaveState.orig_AbstractPhysicalObjectFromString orig, World world, string objString)
+        {
+            var data = objString.Split(new[] { "<oA>" }, StringSplitOptions.None);
+            var type = data[1];
+            if (type == "ElectricRubbish")
+            {
+                return new ElectricRubbishAbstract(world, ElectricRubbishExtnum.ElectricRubbishAbstract, null, WorldCoordinate.FromString(data[2]), EntityID.FromString(data[0]), int.Parse(data[3]));
+            }
+            return orig(world, objString);
+        }
+
+        private string ItemSymbol_SpriteNameForItem(On.ItemSymbol.orig_SpriteNameForItem orig, AbstractPhysicalObject.AbstractObjectType itemType, int intData)
+        {
+            Debug.Log(itemType);
+            if(itemType == ElectricRubbishExtnum.ElectricRubbishAbstract)
+            {
+                return orig(AbstractPhysicalObject.AbstractObjectType.Rock, intData);
+            }
+            return orig(itemType, intData);
+        }
+
+        private Color ItemSymbol_ColorForItem(On.ItemSymbol.orig_ColorForItem orig, AbstractPhysicalObject.AbstractObjectType itemType, int intData)
+        {
+            if (itemType == ElectricRubbishExtnum.ElectricRubbishAbstract)
+            {
+                return orig(AbstractPhysicalObject.AbstractObjectType.Rock, intData);
+            }
+            return orig(itemType, intData);
+        }
+
+
+        /*
+private void RockHook(On.Rock.orig_InitiateSprites orig, Rock self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
+{
+   self.Destroy();
+}*/
+
         private void RoomLoadedPatch(On.Room.orig_Loaded orig, Room room)
         {
             if (room.abstractRoom.firstTimeRealized)
@@ -68,7 +106,7 @@ namespace ElectricRubbish
                             {
                                 p.AddQuarterFood();
                                 EntityID newID = room.game.GetNewID(-room.abstractRoom.index);
-                                ElectricRubbishAbstract entity = new ElectricRubbishAbstract(room.world, ElectricRubbishExtnum.ElectricRubbishAbstract, null, new WorldCoordinate(room.abstractRoom.index, spawnTile.x, spawnTile.y, -1), newID);
+                                ElectricRubbishAbstract entity = new ElectricRubbishAbstract(room.world, ElectricRubbishExtnum.ElectricRubbishAbstract, null, new WorldCoordinate(room.abstractRoom.index, spawnTile.x, spawnTile.y, -1), newID, 2);
                                 room.abstractRoom.AddEntity(entity);
                             }
                         }
@@ -79,36 +117,10 @@ namespace ElectricRubbish
             orig(room);
         }
 
-        public void Electrocute(Creature otherObject, Room room)
-        {
-
-            if (!(otherObject is BigEel))
-            {
-                (otherObject as Creature).Violence(otherObject.firstChunk, Vector2.one, otherObject.firstChunk, null, Creature.DamageType.Electric, 0.1f, (!(otherObject is Player)) ? (320f * Mathf.Lerp((otherObject as Creature).Template.baseStunResistance, 1f, 0.5f)) : 140f);
-                room.AddObject(new CreatureSpasmer(otherObject as Creature, allowDead: false, (otherObject as Creature).stun));
-            }
-
-            bool flag2 = false;
-            if (otherObject.Submersion > 0.5f)
-            {
-                room.AddObject(new UnderwaterShock(room, null, otherObject.firstChunk.pos, 10, 800f, 2f, otherObject, new Color(0.8f, 0.8f, 1f)));
-                flag2 = true;
-            }
-
-            room.PlaySound(SoundID.Jelly_Fish_Tentacle_Stun, otherObject.firstChunk.pos);
-            room.AddObject(new Explosion.ExplosionLight(otherObject.firstChunk.pos, 200f, 1f, 4, new Color(0.7f, 1f, 1f)));
-            for (int i = 0; i < 15; i++)
-            {
-                Vector2 vector = Vector2.one;
-                room.AddObject(new MouseSpark(otherObject.firstChunk.pos + vector * 9f, otherObject.firstChunk.vel, 20f, new Color(0.7f, 1f, 1f)));
-            }
-
-        }
-
         private void ItemRealizeHook(On.AbstractPhysicalObject.orig_Realize orig, AbstractPhysicalObject self)
         {
             orig(self);
-            if(self.type == AbstractPhysicalObject.AbstractObjectType.Rock)
+            if(self.realizedObject is Rock)
             {
                 self.Destroy();
                 /*

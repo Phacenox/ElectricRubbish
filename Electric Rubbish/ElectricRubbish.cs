@@ -8,6 +8,7 @@ using UnityEngine;
 using Noise;
 using RWCustom;
 using IL.LizardCosmetics;
+using MoreSlugcats;
 
 namespace ElectricRubbish
 {
@@ -18,21 +19,25 @@ namespace ElectricRubbish
 
     public class ElectricRubbishAbstract : AbstractPhysicalObject
     {
-        public ElectricRubbishAbstract(World world, AbstractObjectType type, PhysicalObject realizedObject, WorldCoordinate pos, EntityID ID) : base(world, type, realizedObject, pos, ID)
+        public int electricCharge = 2;
+        public ElectricRubbishAbstract(World world, AbstractObjectType type, PhysicalObject realizedObject, WorldCoordinate pos, EntityID ID, int electricCharge) : base(world, type, realizedObject, pos, ID)
         {
-            this.realizedObject = new ElectricRubbish(this, world);
+            this.electricCharge = electricCharge;
+        }
+        public override void Realize()
+        {
+            realizedObject = new ElectricRubbish(this, world);
+            base.Realize();
         }
     }
 
     public class ElectricRubbish : Rock
     {
-
+        public ElectricRubbishAbstract rubbishAbstract;
         public float fluxSpeed;
         public float fluxTimer;
 
         public Vector2 sparkPoint;
-
-        public int electricCharge = 2;
 
         public Color electricColor;
 
@@ -50,6 +55,7 @@ namespace ElectricRubbish
             electricColor = Custom.HSL2RGB(UnityEngine.Random.Range(0.55f, 0.7f), UnityEngine.Random.Range(0.8f, 1f), UnityEngine.Random.Range(0.3f, 0.6f));
             UnityEngine.Random.InitState(abstractPhysicalObject.ID.RandomSeed);
             ResetFluxSpeed();
+            rubbishAbstract = (ElectricRubbishAbstract)abstractPhysicalObject;
 
             Debug.Log("spawned object!");
 
@@ -62,8 +68,7 @@ namespace ElectricRubbish
             fluxTimer += fluxSpeed;
             if (fluxTimer > (float)Math.PI * 2f)
                 ResetFluxSpeed();
-
-            if (UnityEngine.Random.value < 0.025f) Spark();
+            if (UnityEngine.Random.value < 0.0125f * rubbishAbstract.electricCharge) Spark();
 
             didZapCoilCheck = false;
 
@@ -72,7 +77,7 @@ namespace ElectricRubbish
                 ZapCoil zapCoil = room.zapCoils[k];
                 if (zapCoil.turnedOn > 0.5f && zapCoil.GetFloatRect.Vector2Inside(base.firstChunk.pos + rotation * 30f))
                 {
-                    if (electricCharge == 0)
+                    if (rubbishAbstract.electricCharge == 0)
                     {
                         Recharge();
                     }
@@ -89,19 +94,19 @@ namespace ElectricRubbish
 
         public void Spark()
         {
-            if (electricCharge > 0)
+            if (rubbishAbstract.electricCharge > 0)
             {
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 5 * rubbishAbstract.electricCharge; i++)
                 {
                     Vector2 vector = Custom.RNV();
-                    room.AddObject(new Spark(sparkPoint + vector * UnityEngine.Random.value * 20f, vector * Mathf.Lerp(4f, 10f, UnityEngine.Random.value), Color.white, null, 4, 18));
+                    room.AddObject(new Spark(sparkPoint + vector * UnityEngine.Random.value * 20f, vector * Mathf.Lerp(2f, 5f, UnityEngine.Random.value), Color.white, null, 4, 18));
                 }
             }
         }
 
         public void Zap()
         {
-            if (electricCharge > 0)
+            if (rubbishAbstract.electricCharge > 0)
             {
                 room.AddObject(new ZapCoil.ZapFlash(sparkPoint, 10f));
                 room.PlaySound(SoundID.Zapper_Zap, sparkPoint, 1f, (zapPitch == 0f) ? (1.5f + UnityEngine.Random.value * 1.5f) : zapPitch);
@@ -112,7 +117,7 @@ namespace ElectricRubbish
             }
         }
 
-        public void Electrocute(PhysicalObject otherObject)
+        public void Electrocute(PhysicalObject otherObject, float stunScalar = 1)
         {
             if (!(otherObject is Creature))
             {
@@ -120,20 +125,20 @@ namespace ElectricRubbish
             }
 
             bool flag = CheckElectricCreature(otherObject as Creature);
-            if (flag && electricCharge == 0)
+            if (flag && rubbishAbstract.electricCharge == 0)
             {
                 Recharge();
             }
             else
             {
-                if (electricCharge == 0)
+                if (rubbishAbstract.electricCharge == 0)
                 {
                     return;
                 }
 
                 if (!(otherObject is BigEel) && !flag)
                 {
-                    (otherObject as Creature).Violence(base.firstChunk, Custom.DirVec(base.firstChunk.pos, otherObject.firstChunk.pos) * 5f, otherObject.firstChunk, null, Creature.DamageType.Electric, 0.1f, (!(otherObject is Player)) ? (320f * Mathf.Lerp((otherObject as Creature).Template.baseStunResistance, 1f, 0.5f)) : 140f);
+                    (otherObject as Creature).Violence(base.firstChunk, Custom.DirVec(base.firstChunk.pos, otherObject.firstChunk.pos) * 5f, otherObject.firstChunk, null, Creature.DamageType.Electric, 0.1f, (!(otherObject is Player)) ? stunScalar * (320f * Mathf.Lerp((otherObject as Creature).Template.baseStunResistance, 1f, 0.5f)) : stunScalar * 140f);
                     room.AddObject(new CreatureSpasmer(otherObject as Creature, allowDead: false, (otherObject as Creature).stun));
                 }
 
@@ -156,7 +161,10 @@ namespace ElectricRubbish
                     return;
                 }
 
-                ShortCircuit();
+                if (rubbishAbstract.electricCharge > 0)
+                {
+                    rubbishAbstract.electricCharge--;
+                }
             }
         }
 
@@ -166,14 +174,34 @@ namespace ElectricRubbish
             Zap();
         }
 
+        public override void Grabbed(Creature.Grasp grasp)
+        {
+            base.Grabbed(grasp);
+            if (rubbishAbstract.electricCharge == 2)
+                Electrocute(grasp.grabber, 0.3f);
+        }
+
         public override void Thrown(Creature thrownBy, Vector2 thrownPos, Vector2? firstFrameTraceFromPos, IntVector2 throwDir, float frc, bool eu)
         {
             base.Thrown(thrownBy, thrownPos, firstFrameTraceFromPos, throwDir, frc, eu);
             Spark();
         }
 
+        public override bool HitSomething(SharedPhysics.CollisionResult result, bool eu)
+        {
+            if (result.obj != null)
+            {
+                Electrocute(result.obj);
+                Debug.Log("HitSomething with" + result.obj.ToString());
+                Debug.Log(rubbishAbstract.electricCharge);
+                Spark();
+            }
+            return base.HitSomething(result, eu);
+        }
+
         public override void HitSomethingWithoutStopping(PhysicalObject obj, BodyChunk chunk, Appendage appendage)
         {
+            Debug.Log("hitsomething with" + obj.ToString());
             base.HitSomethingWithoutStopping(obj, chunk, appendage);
             Spark();
         }
@@ -195,40 +223,20 @@ namespace ElectricRubbish
 
         public override void InitiateSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
         {
-            sLeaser.sprites = new FSprite[2];
-            sLeaser.sprites[0] = new FSprite("SmallSpear");
-
-            sLeaser.sprites[1] = new FSprite("Pebble" + UnityEngine.Random.Range(1, 12));
-
-            AddToContainer(sLeaser, rCam, null);
+            base.InitiateSprites(sLeaser, rCam);
         }
 
         public override void DrawSprites(RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
         {
             base.DrawSprites(sLeaser, rCam, timeStacker, camPos);
-            /* todo: check this
-            if (blink > 0)
-            {
-                if (blink > 1 && UnityEngine.Random.value < 0.5f)
-                {
-                    sLeaser.sprites[0].color = new Color(1f, 1f, 1f);
-                }
-                else
-                {
-                    sLeaser.sprites[0].color = color;
-                }
-            }*/
 
-            sLeaser.sprites[1].x = - camPos.x;
-            sLeaser.sprites[1].y = - camPos.y;
-            sLeaser.sprites[1].rotation = sLeaser.sprites[0].rotation;
-            if (electricCharge == 0)
+            if (rubbishAbstract.electricCharge == 0)
             {
-                sLeaser.sprites[1].color = blackColor;
+                sLeaser.sprites[0].color = blackColor;
             }
             else
             {
-                sLeaser.sprites[1].color = Color.Lerp(electricColor, Color.white, Mathf.Abs(Mathf.Sin(fluxTimer)));
+                sLeaser.sprites[0].color = Color.Lerp(electricColor, Color.white, rubbishAbstract.electricCharge * Mathf.Abs(Mathf.Sin(fluxTimer)));
             }
 
             sparkPoint = PointAlongSpear(sLeaser, 0.9f);
@@ -250,16 +258,11 @@ namespace ElectricRubbish
 
             sLeaser.sprites[0].RemoveFromContainer();
             newContatiner.AddChild(sLeaser.sprites[0]);
-            for (int num = sLeaser.sprites.Length - 1; num >= 1; num--)
-            {
-                sLeaser.sprites[num].RemoveFromContainer();
-                newContatiner.AddChild(sLeaser.sprites[num]);
-            }
         }
 
         public void ShortCircuit()
         {
-            if (electricCharge > 0)
+            if (rubbishAbstract.electricCharge > 0)
             {
                 Vector2 pos = base.firstChunk.pos;
                 room.AddObject(new Explosion.ExplosionLight(pos, 40f, 1f, 2, electricColor));
@@ -274,13 +277,13 @@ namespace ElectricRubbish
                 room.PlaySound(SoundID.Firecracker_Bang, pos);
                 room.InGameNoise(new InGameNoise(pos, 800f, this, 1f));
                 vibrate = Math.Max(vibrate, 6);
-                electricCharge = 0;
+                rubbishAbstract.electricCharge = 0;
             }
         }
 
         public void ExplosiveShortCircuit()
         {
-            if (electricCharge > 0)
+            if (rubbishAbstract.electricCharge > 0)
             {
                 Vector2 pos = base.firstChunk.pos;
                 room.AddObject(new Explosion.ExplosionLight(pos, 40f, 1f, 2, electricColor));
@@ -301,9 +304,9 @@ namespace ElectricRubbish
 
         public void Recharge()
         {
-            if (electricCharge == 0)
+            if (rubbishAbstract.electricCharge == 0)
             {
-                electricCharge = 2;
+                rubbishAbstract.electricCharge = 2;
                 room.PlaySound(SoundID.Jelly_Fish_Tentacle_Stun, base.firstChunk.pos);
                 room.AddObject(new Explosion.ExplosionLight(base.firstChunk.pos, 200f, 1f, 4, new Color(0.7f, 1f, 1f)));
                 Spark();
