@@ -29,12 +29,6 @@ namespace ElectricRubbish
             On.AbstractPhysicalObject.Realize += ItemRealizeHook;
             On.PhysicalObject.Grabbed += ItemGrabbedHook;
             On.Room.Loaded += RoomLoadedPatch;
-            ElectricRubbishExtnum.RegisterValues();
-        }
-
-        public void OnDisable()
-        {
-            ElectricRubbishExtnum.UnregisterValues();
         }
 
 
@@ -43,10 +37,9 @@ namespace ElectricRubbish
             orig(self, grasp);
             if(self is ElectricRubbish)
             {
+                /*
                 grasp.Release();
-                EntityID id = self.room.game.GetNewID(-self.room.abstractRoom.index);
-                self.room.abstractRoom.AddEntity(new AbstractPhysicalObject(p.room.world, AbstractPhysicalObject.AbstractObjectType.Spear, null, p.abstractPhysicalObject.pos, id));
-                Electrocute(p, self.room);
+                Electrocute(p, self.room);*/
             }
 
         }
@@ -75,7 +68,7 @@ namespace ElectricRubbish
                             {
                                 p.AddQuarterFood();
                                 EntityID newID = room.game.GetNewID(-room.abstractRoom.index);
-                                AbstractPhysicalObject entity = new AbstractPhysicalObject(room.world, ElectricRubbishExtnum.ElectricRubbish, null, new WorldCoordinate(room.abstractRoom.index, spawnTile.x, spawnTile.y, -1), newID);
+                                ElectricRubbishAbstract entity = new ElectricRubbishAbstract(room.world, ElectricRubbishExtnum.ElectricRubbishAbstract, null, new WorldCoordinate(room.abstractRoom.index, spawnTile.x, spawnTile.y, -1), newID);
                                 room.abstractRoom.AddEntity(entity);
                             }
                         }

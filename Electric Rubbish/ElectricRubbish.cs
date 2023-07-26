@@ -13,17 +13,15 @@ namespace ElectricRubbish
 {
     public static class ElectricRubbishExtnum
     {
-        public static AbstractPhysicalObject.AbstractObjectType ElectricRubbish;
+        public static AbstractPhysicalObject.AbstractObjectType ElectricRubbishAbstract;
+    }
 
-        public static void RegisterValues()
+    public class ElectricRubbishAbstract : AbstractPhysicalObject
+    {
+        public ElectricRubbishAbstract(World world, AbstractObjectType type, PhysicalObject realizedObject, WorldCoordinate pos, EntityID ID) : base(world, type, realizedObject, pos, ID)
         {
-            ElectricRubbish = new AbstractPhysicalObject.AbstractObjectType("ElectricRubbish", true);
+            this.realizedObject = new ElectricRubbish(this, world);
         }
-        public static void UnregisterValues()
-        {
-            if (ElectricRubbish != null) { ElectricRubbish.Unregister(); ElectricRubbish = null;}
-        }
-
     }
 
     public class ElectricRubbish : Rock
@@ -52,6 +50,8 @@ namespace ElectricRubbish
             electricColor = Custom.HSL2RGB(UnityEngine.Random.Range(0.55f, 0.7f), UnityEngine.Random.Range(0.8f, 1f), UnityEngine.Random.Range(0.3f, 0.6f));
             UnityEngine.Random.InitState(abstractPhysicalObject.ID.RandomSeed);
             ResetFluxSpeed();
+
+            Debug.Log("spawned object!");
 
             UnityEngine.Random.state = state;
         }
@@ -137,11 +137,9 @@ namespace ElectricRubbish
                     room.AddObject(new CreatureSpasmer(otherObject as Creature, allowDead: false, (otherObject as Creature).stun));
                 }
 
-                bool flag2 = false;
                 if (base.Submersion <= 0.5f && otherObject.Submersion > 0.5f)
                 {
                     room.AddObject(new UnderwaterShock(room, null, otherObject.firstChunk.pos, 10, 800f, 2f, thrownBy, new Color(0.8f, 0.8f, 1f)));
-                    flag2 = true;
                 }
 
                 room.PlaySound(SoundID.Jelly_Fish_Tentacle_Stun, base.firstChunk.pos);
