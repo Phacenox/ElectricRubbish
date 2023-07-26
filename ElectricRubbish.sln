@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33829.357
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Electric Rubbish", "Electric Rubbish\Electric Rubbish.csproj", "{C5DEF68D-AA7A-47DF-B28A-92DD804A0557}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C5DEF68D-AA7A-47DF-B28A-92DD804A0557}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5DEF68D-AA7A-47DF-B28A-92DD804A0557}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5DEF68D-AA7A-47DF-B28A-92DD804A0557}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5DEF68D-AA7A-47DF-B28A-92DD804A0557}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {836356BA-56D5-405A-8CA1-7998FDCC4972}
+	EndGlobalSection
+EndGlobal
