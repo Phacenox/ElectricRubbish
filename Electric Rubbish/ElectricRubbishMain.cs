@@ -18,9 +18,9 @@ namespace ElectricRubbish
     [BepInPlugin(PLUGIN_GUID, PLUGIN_NAME, PLUGIN_VERSION)]
     public class ElectricRubbishMain : BaseUnityPlugin
     {
-        public const string PLUGIN_GUID = "phace.electric_rubbish";
+        public const string PLUGIN_GUID = "phace.electricrubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "1.0";
+        public const string PLUGIN_VERSION = "1.0.2";
 
         public OptionInterface config;
 
@@ -167,7 +167,7 @@ namespace ElectricRubbish
 
             if(!self.abstractRoom.shelter && obj.GetType() == typeof(Rock) && obj is Rock r && UnityEngine.Random.value < (float)ElectricRubbishOptions.Percent_Rock_Replace_Rate.Value/100f)
             {
-                ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), 2);
+                ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), UnityEngine.Random.value < 0.85f ? 2 : 1);
                 abstr.RealizeInRoom();
                 orig(self, abstr.realizedObject);
                 obj.Destroy();
