@@ -89,7 +89,7 @@ namespace ElectricRubbish
             public static Configurable<bool> All_Rubbish_Rechargable;
             public ElectricRubbishOptions()
             {
-                Percent_Rock_Replace_Rate = config.Bind<int>("Percent_Rock_Replace_Rate", 15, new ConfigurableInfo("When set to 1, all rubbish will be electrified."));
+                Percent_Rock_Replace_Rate = config.Bind<int>("Percent_Rock_Replace_Rate", 10, new ConfigurableInfo("When set to 1, all rubbish will be electrified."));
                 All_Rubbish_Rechargable = config.Bind<bool>("All_Rubbish_Rechargable", false, new ConfigurableInfo("When true, any normal rubbish will be electrified if thrown at an electric creature."));
             }
 
