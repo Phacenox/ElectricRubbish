@@ -52,7 +52,24 @@ namespace ElectricRubbish
                     diff_x = Mathf.Abs(i.pos.x - abstractPhysicalObject.pos.x);
                     diff_y = Mathf.Abs(i.pos.y - abstractPhysicalObject.pos.y);
                     if(Mathf.Sqrt(Mathf.Pow(diff_x, 2) +  Mathf.Pow(diff_y,2)) < 1)
+                    {
+                        Debug.Log(ElectricRubbishOptions.OverchargeLethatlity);
+                        if(i.realizedCreature is Player p && ElectricRubbishOptions.OverchargeLethatlity >= ElectricRubbishOptions.LETHALITY.Kills_Artificer)
+                        {
+                            if(p.slugcatStats.name == MoreSlugcatsEnums.SlugcatStatsName.Artificer)
+                            {
+                                ExplosiveShortCircuit();
+                                p.PyroDeath();
+                                return;
+                            }
+                        }
+                        if(ElectricRubbishOptions.OverchargeLethatlity >= ElectricRubbishOptions.LETHALITY.Kills_Anything)
+                        {
+                            Debug.Log("kill");
+                            i.realizedCreature.Violence(base.firstChunk, Vector2.zero, i.realizedCreature.firstChunk, null, Creature.DamageType.Electric, 1.5f, 0f);
+                        }
                         Electrocute(i.realizedObject);
+                    }
                 }
             }
 

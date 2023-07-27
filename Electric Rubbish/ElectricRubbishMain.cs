@@ -10,7 +10,7 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electricrubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "1.0.3";
+        public const string PLUGIN_VERSION = "1.1.0";
 
         public OptionInterface config;
 
@@ -52,7 +52,7 @@ namespace ElectricRubbish
             if (itemType == ElectricRubbishExtnum.ElectricRubbishAbstract)
             {
                 //when the option for total replacement is checked, the shelter sprites reflect the rubbish's charge value.
-                if (ElectricRubbishOptions.allRubbishRechargeable && intData == 0)
+                if (ElectricRubbishOptions.AllRubbishRechargeable && intData == 0)
                 {
                     return orig(AbstractPhysicalObject.AbstractObjectType.Rock, 0);
                 }
@@ -91,21 +91,19 @@ namespace ElectricRubbish
             if(obj.GetType() == typeof(Rock) && obj is Rock r)
             {
                 //natural electrified spawns
-                if (!self.abstractRoom.shelter && UnityEngine.Random.value < ElectricRubbishOptions.rockReplaceRate)
+                if (!self.abstractRoom.shelter && UnityEngine.Random.value < ElectricRubbishOptions.RockReplaceRate)
                 {
                     ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), UnityEngine.Random.value < 0.85f ? 2 : 1);
                     abstr.RealizeInRoom();
                     orig(self, abstr.realizedObject);
                     obj.Destroy();
-                    return;
                 } //extra conversion
-                else if (ElectricRubbishOptions.allRubbishRechargeable)
+                else if (ElectricRubbishOptions.AllRubbishRechargeable)
                 {
                     ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), 0);
                     abstr.RealizeInRoom();
                     orig(self, abstr.realizedObject);
                     obj.Destroy();
-                    return;
                 }
             }
             orig(self, obj);
