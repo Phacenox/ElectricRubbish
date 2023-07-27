@@ -34,7 +34,30 @@ namespace ElectricRubbish
 
             On.Room.AddObject += AddObjHook;
 
+            On.Rock.HitSomething += RockHitHook;
+
             ElectricRubbishExtnum.RegisterValues();
+        }
+
+        private bool RockHitHook(On.Rock.orig_HitSomething orig, Rock self, SharedPhysics.CollisionResult result, bool eu)
+        {
+            if (ElectricRubbishOptions.All_Rubbish_Rechargable.Value && result.obj != null && !(self is ElectricRubbish))
+            {
+                if (result.obj is Creature && ElectricRubbish.CheckElectricCreature(result.obj as Creature))
+                {
+                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.room.world, self.abstractPhysicalObject.pos, self.room.game.GetNewID(), 0);
+                    abstr.RealizeInRoom();
+                    (abstr.realizedObject as ElectricRubbish).RechargeNextFrame();
+                    //StartCoroutine("slowrecharge", abstr.realizedObject as ElectricRubbish);
+                    self.Destroy();
+                }
+            }
+            return orig(self, result, eu);
+        }
+        IEnumerable<object> slowrecharge(ElectricRubbish r)
+        {
+            yield return null;
+            r.Recharge();
         }
 
         private void InitHook(On.RainWorld.orig_OnModsInit orig, RainWorld self)
@@ -63,9 +86,11 @@ namespace ElectricRubbish
 
         public class ElectricRubbishOptions: OptionInterface{
             public static Configurable<int> Percent_Rock_Replace_Rate;
+            public static Configurable<bool> All_Rubbish_Rechargable;
             public ElectricRubbishOptions()
             {
                 Percent_Rock_Replace_Rate = config.Bind<int>("Percent_Rock_Replace_Rate", 15, new ConfigurableInfo("When set to 1, all rubbish will be electrified."));
+                All_Rubbish_Rechargable = config.Bind<bool>("All_Rubbish_Rechargable", false, new ConfigurableInfo("When true, any normal rubbish will be electrified if thrown at an electric creature."));
             }
 
             public override void Initialize()
@@ -75,16 +100,18 @@ namespace ElectricRubbish
                 {
                     new Menu.Remix.MixedUI.OpTab(this)
                 };
-                Menu.Remix.MixedUI.OpLabel Label = new Menu.Remix.MixedUI.OpLabel(0f, 550f, "Percent Electrification Rate");
+                Menu.Remix.MixedUI.OpLabel Label = new Menu.Remix.MixedUI.OpLabel(0f, 550f, "Percent Natural Electrification Rate");
                 Menu.Remix.MixedUI.OpSlider slider = new Menu.Remix.MixedUI.OpSlider(Percent_Rock_Replace_Rate, new Vector2(0f, 520f), 200)
                 {
                     min = 0,
                     max = 100
                 };
+                Menu.Remix.MixedUI.OpLabel Label2 = new Menu.Remix.MixedUI.OpLabel(0f, 450f, "Recharge any Rubbish");
+                Menu.Remix.MixedUI.OpCheckBox checkbox = new Menu.Remix.MixedUI.OpCheckBox(All_Rubbish_Rechargable, new Vector2(0f, 420f));
 
                 Tabs[0].AddItems(new Menu.Remix.MixedUI.UIelement[]
                 {
-                    Label, slider
+                    Label, slider, Label2, checkbox
                 });
             }
         }
@@ -138,10 +165,9 @@ namespace ElectricRubbish
         private void AddObjHook(On.Room.orig_AddObject orig, Room self, UpdatableAndDeletable obj)
         {
 
-            if(obj.GetType() == typeof(Rock) && obj is Rock r && UnityEngine.Random.value < (float)ElectricRubbishOptions.Percent_Rock_Replace_Rate.Value/100f)
+            if(!self.abstractRoom.shelter && obj.GetType() == typeof(Rock) && obj is Rock r && UnityEngine.Random.value < (float)ElectricRubbishOptions.Percent_Rock_Replace_Rate.Value/100f)
             {
                 ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), 2);
-                abstr.realizedObject = (PhysicalObject)new ElectricRubbish(abstr, self.world); ;
                 abstr.RealizeInRoom();
                 orig(self, abstr.realizedObject);
                 obj.Destroy();

@@ -28,6 +28,7 @@ namespace ElectricRubbish
         public float zapPitch;
 
         public bool didZapCoilCheck;
+        public bool req_Recharge = false;
 
         public ElectricRubbish(AbstractPhysicalObject abstractPhysicalObject, World world)
             : base(abstractPhysicalObject, world)
@@ -51,6 +52,8 @@ namespace ElectricRubbish
             if (fluxTimer > (float)Math.PI * 2f)
                 ResetFluxSpeed();
             if (UnityEngine.Random.value < 0.0125f * rubbishAbstract.electricCharge) Spark();
+
+            if (req_Recharge) Recharge();
 
             didZapCoilCheck = false;
 
@@ -264,6 +267,11 @@ namespace ElectricRubbish
             }
         }
 
+        public void RechargeNextFrame()
+        {
+            req_Recharge = true;
+        }
+
         public void Recharge()
         {
             if (rubbishAbstract.electricCharge == 0)
@@ -277,7 +285,7 @@ namespace ElectricRubbish
             }
         }
 
-        public bool CheckElectricCreature(Creature otherObject)
+        public static bool CheckElectricCreature(Creature otherObject)
         {
             if (!(otherObject is Centipede) && !(otherObject is BigJellyFish))
             {
