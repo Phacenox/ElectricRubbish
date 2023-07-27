@@ -36,8 +36,8 @@ namespace ElectricRubbish
             UnityEngine.Random.State state = UnityEngine.Random.state;
             electricColor = Custom.HSL2RGB(UnityEngine.Random.Range(0.55f, 0.7f), UnityEngine.Random.Range(0.8f, 1f), UnityEngine.Random.Range(0.3f, 0.6f));
             UnityEngine.Random.InitState(abstractPhysicalObject.ID.RandomSeed);
-            ResetFluxSpeed();
             rubbishAbstract = (ElectricRubbishAbstract)abstractPhysicalObject;
+            ResetFluxSpeed();
 
             Debug.Log("spawned object!");
 
@@ -53,6 +53,20 @@ namespace ElectricRubbish
             if (UnityEngine.Random.value < 0.0125f * rubbishAbstract.electricCharge) Spark();
 
             didZapCoilCheck = false;
+
+            if(rubbishAbstract.electricCharge == 2)
+            {
+                float diff_x, diff_y;
+                foreach (var i in room.abstractRoom.creatures)
+                {
+                    diff_x = Mathf.Abs(i.pos.x - abstractPhysicalObject.pos.x);
+                    diff_y = Mathf.Abs(i.pos.y - abstractPhysicalObject.pos.y);
+                    if(Mathf.Sqrt(Mathf.Pow(diff_x, 2) +  Mathf.Pow(diff_y,2)) < 1)
+                    {
+                        Electrocute(i.realizedObject);
+                    }
+                }
+            }
 
             for (int k = 0; k < room.zapCoils.Count; k++)
             {
@@ -130,7 +144,7 @@ namespace ElectricRubbish
                     room.AddObject(new UnderwaterShock(room, null, otherObject.firstChunk.pos, 10, 800f, 2f, thrownBy, new Color(0.8f, 0.8f, 1f)));
                 }
 
-                room.PlaySound(SoundID.Jelly_Fish_Tentacle_Stun, base.firstChunk.pos);
+                room.PlaySound(SoundID.Jelly_Fish_Tentacle_Stun, base.firstChunk.pos, Mathf.Max(stunScalar, 0.6f), 1);
                 room.AddObject(new Explosion.ExplosionLight(base.firstChunk.pos, 200f, 1f, 4, new Color(0.7f, 1f, 1f)));
                 for (int i = 0; i < 15; i++)
                 {
@@ -161,7 +175,7 @@ namespace ElectricRubbish
         {
             base.Grabbed(grasp);
             if (rubbishAbstract.electricCharge == 2)
-                Electrocute(grasp.grabber, 0.3f);
+                Electrocute(grasp.grabber, 0.1f);
         }
 
         public override void Thrown(Creature thrownBy, Vector2 thrownPos, Vector2? firstFrameTraceFromPos, IntVector2 throwDir, float frc, bool eu)
@@ -188,8 +202,8 @@ namespace ElectricRubbish
 
         public void ResetFluxSpeed()
         {
-            fluxSpeed = UnityEngine.Random.value * 0.2f + 0.025f;
-            while (fluxTimer > (float)Math.PI * 2f)
+            fluxSpeed = UnityEngine.Random.value * 0.2f + rubbishAbstract.electricCharge == 2 ? 0.05f : 0.025f;
+            while (fluxTimer > (float)Math.PI * 2f) 
             {
                 fluxTimer -= (float)Math.PI * 2f;
             }
@@ -210,7 +224,7 @@ namespace ElectricRubbish
             }
             else
             {
-                sLeaser.sprites[0].color = Color.Lerp(electricColor, Color.white, rubbishAbstract.electricCharge * Mathf.Abs(Mathf.Sin(fluxTimer)));
+                sLeaser.sprites[0].color = Color.Lerp(electricColor, rubbishAbstract.electricCharge == 2 ? Color.white : electricColor + new Color(0.6f, 0.6f, 0.6f, 0), rubbishAbstract.electricCharge * Mathf.Abs(Mathf.Sin(fluxTimer)));
             }
 
             sparkPoint = PointAlongSpear(sLeaser, 0.5f);
