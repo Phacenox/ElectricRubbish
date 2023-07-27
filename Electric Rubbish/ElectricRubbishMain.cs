@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using RWCustom;
+using IL.Menu.Remix.MixedUI;
 
 namespace ElectricRubbish
 {
@@ -19,12 +20,13 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electric_rubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "0.2";
+        public const string PLUGIN_VERSION = "0.3";
 
-        const float rock_replace_rate = 1.0f;
+        public OptionInterface config;
 
         public void OnEnable()
         {
+            On.RainWorld.OnModsInit += InitHook;
             On.ItemSymbol.SymbolDataFromItem += ItemSymbol_SymbolDataFromItem;
             On.ItemSymbol.ColorForItem += ItemSymbol_ColorForItem;
             On.ItemSymbol.SpriteNameForItem += ItemSymbol_SpriteNameForItem;
@@ -34,25 +36,58 @@ namespace ElectricRubbish
 
             ElectricRubbishExtnum.RegisterValues();
         }
+
+        private void InitHook(On.RainWorld.orig_OnModsInit orig, RainWorld self)
+        {
+            orig(self);
+            Logger.LogDebug("initting config");
+
+
+            try
+            {
+                OptionInterface config = new ElectricRubbishOptions();
+                MachineConnector.SetRegisteredOI(PLUGIN_GUID, config);
+                Logger.LogDebug("config working");
+            }
+            catch (Exception err)
+            {
+                Logger.LogError(err);
+                Logger.LogDebug("config not working");
+            }
+        }
+
         public void OnDisable()
         {
             ElectricRubbishExtnum.UnregisterValues();
         }
-        //TODO: 
-        /*
-        public static OptionInterface LoadIO()
-        {
-            return new ElectricRubbishOptions();
-        }
 
-        public class ElectricRubbishOptions: OptionInterface{ 
+        public class ElectricRubbishOptions: OptionInterface{
+            public static Configurable<int> Percent_Rock_Replace_Rate;
             public ElectricRubbishOptions()
             {
-                config = new ConfigHolder(this);
-                config.Bind<float>("Rock Replace Rate", 0.3f);
+                Percent_Rock_Replace_Rate = config.Bind<int>("Percent_Rock_Replace_Rate", 15, new ConfigurableInfo("When set to 1, all rubbish will be electrified."));
+            }
+
+            public override void Initialize()
+            {
+                base.Initialize();
+                this.Tabs = new[]
+                {
+                    new Menu.Remix.MixedUI.OpTab(this)
+                };
+                Menu.Remix.MixedUI.OpLabel Label = new Menu.Remix.MixedUI.OpLabel(0f, 550f, "Percent Electrification Rate");
+                Menu.Remix.MixedUI.OpSlider slider = new Menu.Remix.MixedUI.OpSlider(Percent_Rock_Replace_Rate, new Vector2(0f, 520f), 200)
+                {
+                    min = 0,
+                    max = 100
+                };
+
+                Tabs[0].AddItems(new Menu.Remix.MixedUI.UIelement[]
+                {
+                    Label, slider
+                });
             }
         }
-        */
 
 
         private IconSymbol.IconSymbolData? ItemSymbol_SymbolDataFromItem(On.ItemSymbol.orig_SymbolDataFromItem orig, AbstractPhysicalObject item)
@@ -68,7 +103,7 @@ namespace ElectricRubbish
         {
             if (itemType == ElectricRubbishExtnum.ElectricRubbishAbstract)
             {
-                return Custom.HSL2RGB(UnityEngine.Random.Range(0.6f, 0.65f), UnityEngine.Random.Range(0.85f, 95f), UnityEngine.Random.Range(0.35f, 0.55f));
+                return Custom.HSL2RGB(UnityEngine.Random.Range(0.55f, 0.7f), UnityEngine.Random.Range(0.8f, 1f), UnityEngine.Random.Range(0.3f, 0.6f));
             }
             return orig(itemType, intData);
         }
@@ -103,7 +138,7 @@ namespace ElectricRubbish
         private void AddObjHook(On.Room.orig_AddObject orig, Room self, UpdatableAndDeletable obj)
         {
 
-            if(obj.GetType() == typeof(Rock) && obj is Rock r && UnityEngine.Random.value < rock_replace_rate)
+            if(obj.GetType() == typeof(Rock) && obj is Rock r && UnityEngine.Random.value < (float)ElectricRubbishOptions.Percent_Rock_Replace_Rate.Value/100f)
             {
                 ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), 2);
                 abstr.realizedObject = (PhysicalObject)new ElectricRubbish(abstr, self.world); ;
