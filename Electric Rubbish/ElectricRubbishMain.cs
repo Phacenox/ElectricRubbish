@@ -20,7 +20,7 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electric_rubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "0.3";
+        public const string PLUGIN_VERSION = "1.0";
 
         public OptionInterface config;
 
