@@ -1,17 +1,7 @@
 ﻿using BepInEx;
-using IL;
-using IL.MoreSlugcats;
-using MoreSlugcats;
-using On;
-using On.MoreSlugcats;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using RWCustom;
-using IL.Menu.Remix.MixedUI;
 
 namespace ElectricRubbish
 {
@@ -20,13 +10,14 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electricrubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "1.0.2";
+        public const string PLUGIN_VERSION = "1.0.3";
 
         public OptionInterface config;
 
         public void OnEnable()
         {
             On.RainWorld.OnModsInit += InitHook;
+
             On.ItemSymbol.SymbolDataFromItem += ItemSymbol_SymbolDataFromItem;
             On.ItemSymbol.ColorForItem += ItemSymbol_ColorForItem;
             On.ItemSymbol.SpriteNameForItem += ItemSymbol_SpriteNameForItem;
@@ -34,49 +25,7 @@ namespace ElectricRubbish
 
             On.Room.AddObject += AddObjHook;
 
-            On.Rock.HitSomething += RockHitHook;
-
             ElectricRubbishExtnum.RegisterValues();
-        }
-
-        private bool RockHitHook(On.Rock.orig_HitSomething orig, Rock self, SharedPhysics.CollisionResult result, bool eu)
-        {
-            if (ElectricRubbishOptions.All_Rubbish_Rechargable.Value && result.obj != null && !(self is ElectricRubbish))
-            {
-                if (result.obj is Creature && ElectricRubbish.CheckElectricCreature(result.obj as Creature))
-                {
-                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.room.world, self.abstractPhysicalObject.pos, self.room.game.GetNewID(), 0);
-                    abstr.RealizeInRoom();
-                    (abstr.realizedObject as ElectricRubbish).RechargeNextFrame();
-                    //StartCoroutine("slowrecharge", abstr.realizedObject as ElectricRubbish);
-                    self.Destroy();
-                }
-            }
-            return orig(self, result, eu);
-        }
-        IEnumerable<object> slowrecharge(ElectricRubbish r)
-        {
-            yield return null;
-            r.Recharge();
-        }
-
-        private void InitHook(On.RainWorld.orig_OnModsInit orig, RainWorld self)
-        {
-            orig(self);
-            Logger.LogDebug("initting config");
-
-
-            try
-            {
-                OptionInterface config = new ElectricRubbishOptions();
-                MachineConnector.SetRegisteredOI(PLUGIN_GUID, config);
-                Logger.LogDebug("config working");
-            }
-            catch (Exception err)
-            {
-                Logger.LogError(err);
-                Logger.LogDebug("config not working");
-            }
         }
 
         public void OnDisable()
@@ -84,45 +33,17 @@ namespace ElectricRubbish
             ElectricRubbishExtnum.UnregisterValues();
         }
 
-        public class ElectricRubbishOptions: OptionInterface{
-            public static Configurable<int> Percent_Rock_Replace_Rate;
-            public static Configurable<bool> All_Rubbish_Rechargable;
-            public ElectricRubbishOptions()
-            {
-                Percent_Rock_Replace_Rate = config.Bind<int>("Percent_Rock_Replace_Rate", 10, new ConfigurableInfo("When set to 1, all rubbish will be electrified."));
-                All_Rubbish_Rechargable = config.Bind<bool>("All_Rubbish_Rechargable", false, new ConfigurableInfo("When true, any normal rubbish will be electrified if thrown at an electric creature."));
-            }
-
-            public override void Initialize()
-            {
-                base.Initialize();
-                this.Tabs = new[]
-                {
-                    new Menu.Remix.MixedUI.OpTab(this)
-                };
-                Menu.Remix.MixedUI.OpLabel Label = new Menu.Remix.MixedUI.OpLabel(0f, 550f, "Percent Natural Electrification Rate");
-                Menu.Remix.MixedUI.OpSlider slider = new Menu.Remix.MixedUI.OpSlider(Percent_Rock_Replace_Rate, new Vector2(0f, 520f), 200)
-                {
-                    min = 0,
-                    max = 100
-                };
-                Menu.Remix.MixedUI.OpLabel Label2 = new Menu.Remix.MixedUI.OpLabel(0f, 450f, "Recharge any Rubbish");
-                Menu.Remix.MixedUI.OpCheckBox checkbox = new Menu.Remix.MixedUI.OpCheckBox(All_Rubbish_Rechargable, new Vector2(0f, 420f));
-
-                Tabs[0].AddItems(new Menu.Remix.MixedUI.UIelement[]
-                {
-                    Label, slider, Label2, checkbox
-                });
-            }
+        private void InitHook(On.RainWorld.orig_OnModsInit orig, RainWorld self)
+        {
+            orig(self);
+            OptionInterface config = new ElectricRubbishOptions();
+            MachineConnector.SetRegisteredOI(PLUGIN_GUID, config);
         }
-
 
         private IconSymbol.IconSymbolData? ItemSymbol_SymbolDataFromItem(On.ItemSymbol.orig_SymbolDataFromItem orig, AbstractPhysicalObject item)
         {
-            if (item is ElectricRubbishAbstract)
-            {
-                return new IconSymbol.IconSymbolData() { itemType = ElectricRubbishExtnum.ElectricRubbishAbstract };
-            }
+            if (item is ElectricRubbishAbstract era)
+                return new IconSymbol.IconSymbolData() { itemType = ElectricRubbishExtnum.ElectricRubbishAbstract, intData = era.electricCharge };
             return orig(item);
         }
 
@@ -130,6 +51,11 @@ namespace ElectricRubbish
         {
             if (itemType == ElectricRubbishExtnum.ElectricRubbishAbstract)
             {
+                //when the option for total replacement is checked, the shelter sprites reflect the rubbish's charge value.
+                if (ElectricRubbishOptions.allRubbishRechargeable && intData == 0)
+                {
+                    return orig(AbstractPhysicalObject.AbstractObjectType.Rock, 0);
+                }
                 return Custom.HSL2RGB(UnityEngine.Random.Range(0.55f, 0.7f), UnityEngine.Random.Range(0.8f, 1f), UnityEngine.Random.Range(0.3f, 0.6f));
             }
             return orig(itemType, intData);
@@ -138,10 +64,7 @@ namespace ElectricRubbish
         private string ItemSymbol_SpriteNameForItem(On.ItemSymbol.orig_SpriteNameForItem orig, AbstractPhysicalObject.AbstractObjectType itemType, int intData)
         {
             if (itemType == ElectricRubbishExtnum.ElectricRubbishAbstract)
-            {
-                Debug.Log(orig(AbstractPhysicalObject.AbstractObjectType.Rock, intData));
                 return orig(AbstractPhysicalObject.AbstractObjectType.Rock, intData);
-            }
             return orig(itemType, intData);
         }
 
@@ -164,13 +87,26 @@ namespace ElectricRubbish
 
         private void AddObjHook(On.Room.orig_AddObject orig, Room self, UpdatableAndDeletable obj)
         {
-
-            if(!self.abstractRoom.shelter && obj.GetType() == typeof(Rock) && obj is Rock r && UnityEngine.Random.value < (float)ElectricRubbishOptions.Percent_Rock_Replace_Rate.Value/100f)
+            //needs an extra cast since ElectricRubbish inherits from Rock.
+            if(obj.GetType() == typeof(Rock) && obj is Rock r)
             {
-                ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), UnityEngine.Random.value < 0.85f ? 2 : 1);
-                abstr.RealizeInRoom();
-                orig(self, abstr.realizedObject);
-                obj.Destroy();
+                //natural electrified spawns
+                if (!self.abstractRoom.shelter && UnityEngine.Random.value < ElectricRubbishOptions.rockReplaceRate)
+                {
+                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), UnityEngine.Random.value < 0.85f ? 2 : 1);
+                    abstr.RealizeInRoom();
+                    orig(self, abstr.realizedObject);
+                    obj.Destroy();
+                    return;
+                } //extra conversion
+                else if (ElectricRubbishOptions.allRubbishRechargeable)
+                {
+                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), 0);
+                    abstr.RealizeInRoom();
+                    orig(self, abstr.realizedObject);
+                    obj.Destroy();
+                    return;
+                }
             }
             orig(self, obj);
         }
