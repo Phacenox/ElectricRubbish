@@ -2,6 +2,7 @@
 using System;
 using UnityEngine;
 using RWCustom;
+using System.Collections.Generic;
 
 namespace ElectricRubbish
 {
@@ -10,7 +11,7 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electricrubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "1.1.1";
+        public const string PLUGIN_VERSION = "1.2.0";
 
         public OptionInterface config;
 
@@ -24,6 +25,8 @@ namespace ElectricRubbish
             On.SaveState.AbstractPhysicalObjectFromString += SaveState_AbstractPhysicalObjectFromString;
 
             On.Room.AddObject += AddObjHook;
+            On.UpdatableAndDeletable.Destroy += DestroyHook;
+            On.ScavengerAI.CollectScore_PhysicalObject_bool += ScavCollectScoreHook;
 
             ElectricRubbishExtnum.RegisterValues();
         }
@@ -83,31 +86,78 @@ namespace ElectricRubbish
             return orig(world, objString);
         }
 
-        
+        List<EntityID> addedrocks = new List<EntityID>();
 
         private void AddObjHook(On.Room.orig_AddObject orig, Room self, UpdatableAndDeletable obj)
         {
+            orig(self, obj);
             //needs an extra cast since ElectricRubbish inherits from Rock.
-            if(obj.GetType() == typeof(Rock) && obj is Rock r)
+            if (obj.GetType() == typeof(Rock) && obj is Rock r && !addedrocks.Contains(r.abstractPhysicalObject.ID))
             {
+                addedrocks.Add(r.abstractPhysicalObject.ID);
                 //natural electrified spawns
                 if (!self.abstractRoom.shelter && UnityEngine.Random.value < ElectricRubbishOptions.RockReplaceRate)
                 {
-                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), UnityEngine.Random.value < 0.85f ? 2 : 1);
+                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, (obj as PhysicalObject).abstractPhysicalObject.ID, UnityEngine.Random.value < 0.85f ? 2 : 1);
+                    self.abstractRoom.AddEntity(abstr);
                     abstr.RealizeInRoom();
-                    orig(self, abstr.realizedObject);
                     obj.Destroy();
                 } //extra conversion
                 else if (ElectricRubbishOptions.AllRubbishRechargeable)
                 {
                     //known issue: if converted inside a shelter, the new item is not added to the shelter. it must exit and reenter to be saved.
-                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), 0);
+                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, (obj as PhysicalObject).abstractPhysicalObject.ID, 0);
+                    self.abstractRoom.AddEntity(abstr);
                     abstr.RealizeInRoom();
-                    orig(self, abstr.realizedObject);
                     obj.Destroy();
                 }
             }
-            orig(self, obj);
+        }
+
+        private void DestroyHook(On.UpdatableAndDeletable.orig_Destroy orig, UpdatableAndDeletable self)
+        {
+            if(self.GetType() == typeof(Rock) && self is Rock r)
+                addedrocks.Remove(r.abstractPhysicalObject.ID);
+            orig(self);
+        }
+
+
+        private int ScavCollectScoreHook(On.ScavengerAI.orig_CollectScore_PhysicalObject_bool orig, ScavengerAI self, PhysicalObject obj, bool weaponFiltered)
+        {
+            var original_score = orig(self, obj, weaponFiltered);
+            if (obj is ElectricRubbish er)
+            {
+                //if has no charge, treat as normal rock.
+                if (er.rubbishAbstract.electricCharge == 0)
+                    return original_score;
+                if (weaponFiltered)
+                {
+                    return original_score * 3 / 2;
+                }
+                else
+                {
+                    //if scav would already want this as a normal rock, prioritize this.
+                    if (original_score > 0)
+                        return 3;
+                    //otherwise, try to replace any held uncharged rocks, or fill an empty hand.
+                    for (int i = 0; i < self.scavenger.grasps.Length; i++)
+                    {
+                        if(self.scavenger.grasps[i] == null)
+                        {
+                            return 2;
+                        }
+                        if (self.scavenger.grasps[i].grabbed != obj)
+                        {
+                            if (self.scavenger.grasps[i].grabbed.GetType() == typeof(Rock)
+                                || (self.scavenger.grasps[i].grabbed is ElectricRubbish scavs_er && scavs_er.rubbishAbstract.electricCharge == 0))
+                            {
+                                return 3;
+                            }
+                        }
+                    }
+                }
+            }
+            return original_score;
         }
     }
 }
