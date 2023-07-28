@@ -10,7 +10,7 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electricrubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "1.1.0";
+        public const string PLUGIN_VERSION = "1.1.1";
 
         public OptionInterface config;
 
@@ -36,7 +36,7 @@ namespace ElectricRubbish
         private void InitHook(On.RainWorld.orig_OnModsInit orig, RainWorld self)
         {
             orig(self);
-            OptionInterface config = new ElectricRubbishOptions();
+            config = new ElectricRubbishOptions();
             MachineConnector.SetRegisteredOI(PLUGIN_GUID, config);
         }
 

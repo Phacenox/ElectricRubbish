@@ -6,9 +6,9 @@ namespace ElectricRubbish
 {
     public class ElectricRubbishOptions : OptionInterface
     {
-        static Configurable<int> Percent_Rock_Replace_Rate;
+        public static Configurable<int> Percent_Rock_Replace_Rate;
         public static float RockReplaceRate => Percent_Rock_Replace_Rate.Value / 100f;
-        static Configurable<bool> All_Rubbish_Rechargable;
+        public static Configurable<bool> All_Rubbish_Rechargable;
         public static bool AllRubbishRechargeable => All_Rubbish_Rechargable.Value;
         public enum LETHALITY
         {
@@ -16,7 +16,7 @@ namespace ElectricRubbish
             Kills_Artificer,
             Kills_Anything
         }
-        static Configurable<string> Overcharge_Lethality;
+        public static Configurable<string> Overcharge_Lethality;
         public static LETHALITY OverchargeLethatlity
         {
             get
