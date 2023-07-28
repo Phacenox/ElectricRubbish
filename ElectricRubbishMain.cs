@@ -72,7 +72,7 @@ namespace ElectricRubbish
         {
             //samples
             //ID.- 341.4782 < oA > Spear < oA > SU_A24.4.15.1 < oA > 2 < oA > 0 < oA > 0 < oA > 0 < oA > 0 < oA > 0
-            //ID.- 1.4778 < oA > ElectricRubbishAbstract < oA > SU_S01.24.16.1
+            //ID.- 1.4778 < oA > ElectricRubbishAbstract < oA > SU_S01.24.16.1 < oA > 2
             var data = objString.Split(new[] { "<oA>" }, StringSplitOptions.None);
             var type = data[1];
             if (type == "ElectricRubbishAbstract")
@@ -100,6 +100,7 @@ namespace ElectricRubbish
                 } //extra conversion
                 else if (ElectricRubbishOptions.AllRubbishRechargeable)
                 {
+                    //known issue: if converted inside a shelter, the new item is not added to the shelter. it must exit and reenter to be saved.
                     ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, self.game.GetNewID(), 0);
                     abstr.RealizeInRoom();
                     orig(self, abstr.realizedObject);
