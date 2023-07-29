@@ -61,7 +61,7 @@ namespace ElectricRubbish
             };
             OpLabel Label2 = new OpLabel(0f, 480f, "Recharge any Rubbish");
             OpCheckBox checkbox = new OpCheckBox(All_Rubbish_Rechargable, new Vector2(0f, 450f));
-            checkbox.description = "Any rubbish not charged at the start of a cycle can still be charged manually.";
+            checkbox.description = "Any rubbish not charged at the start of a cycle can still be charged using other electricity sources.";
 
             OpLabel Label4 = new OpLabel(00f, 410f, "Strong Grip");
             OpCheckBox checkbox2 = new OpCheckBox(Strong_Grip, new Vector2(0f, 380f));

@@ -11,7 +11,7 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electricrubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "1.3.0";
+        public const string PLUGIN_VERSION = "1.3.1";
 
         public OptionInterface config;
 
@@ -98,14 +98,14 @@ namespace ElectricRubbish
                 //natural electrified spawns
                 if (!self.abstractRoom.shelter && UnityEngine.Random.value < ElectricRubbishOptions.RockReplaceRate)
                 {
-                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, (obj as PhysicalObject).abstractPhysicalObject.ID, UnityEngine.Random.value < 0.85f ? 2 : 1);
+                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, r.abstractPhysicalObject.ID, UnityEngine.Random.value < 0.85f ? 2 : 1);
                     self.abstractRoom.AddEntity(abstr);
                     abstr.RealizeInRoom();
                     obj.Destroy();
                 } //extra conversion
                 else if (ElectricRubbishOptions.AllRubbishRechargeable)
                 {
-                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, (obj as PhysicalObject).abstractPhysicalObject.ID, 0);
+                    ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, r.abstractPhysicalObject.ID, 0);
                     self.abstractRoom.AddEntity(abstr);
                     abstr.RealizeInRoom();
                     obj.Destroy();
