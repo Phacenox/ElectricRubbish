@@ -11,7 +11,7 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electricrubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "1.2.0";
+        public const string PLUGIN_VERSION = "1.3.0";
 
         public OptionInterface config;
 
@@ -105,7 +105,6 @@ namespace ElectricRubbish
                 } //extra conversion
                 else if (ElectricRubbishOptions.AllRubbishRechargeable)
                 {
-                    //known issue: if converted inside a shelter, the new item is not added to the shelter. it must exit and reenter to be saved.
                     ElectricRubbishAbstract abstr = new ElectricRubbishAbstract(self.world, r.abstractPhysicalObject.pos, (obj as PhysicalObject).abstractPhysicalObject.ID, 0);
                     self.abstractRoom.AddEntity(abstr);
                     abstr.RealizeInRoom();

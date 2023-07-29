@@ -105,7 +105,7 @@ namespace ElectricRubbish
             }
         }
 
-        public void Electrocute(PhysicalObject otherObject, float stunScalar = 1)
+        public void Electrocute(PhysicalObject otherObject, bool ministun = false)
         {
             if (!(otherObject is Creature))
                 return;
@@ -122,14 +122,23 @@ namespace ElectricRubbish
 
                 if (!(otherObject is BigEel) && !flag)
                 {
-                    (otherObject as Creature).Violence(base.firstChunk, Custom.DirVec(base.firstChunk.pos, otherObject.firstChunk.pos) * 5f, otherObject.firstChunk, null, Creature.DamageType.Electric, 0.1f, (!(otherObject is Player)) ? stunScalar * (320f * Mathf.Lerp((otherObject as Creature).Template.baseStunResistance, 1f, 0.5f)) : stunScalar * 140f);
+                    float stun_duration = (!(otherObject is Player)) ? (320f * Mathf.Lerp((otherObject as Creature).Template.baseStunResistance, 1f, 0.5f)) : 140f;
+                    Creature.DamageType damageType = Creature.DamageType.Electric;
+                    if (ministun)
+                    {
+                        stun_duration = 30f;
+                        if (ElectricRubbishOptions.StrongGrip)
+                            damageType = Creature.DamageType.Blunt;
+                    }
+                    (otherObject as Creature).Violence(base.firstChunk, Custom.DirVec(base.firstChunk.pos, otherObject.firstChunk.pos) * 5f, otherObject.firstChunk, null, damageType, 0.1f, stun_duration);
+
                     room.AddObject(new CreatureSpasmer(otherObject as Creature, allowDead: false, (otherObject as Creature).stun));
                 }
 
                 if (base.Submersion <= 0.5f && otherObject.Submersion > 0.5f)
                     room.AddObject(new UnderwaterShock(room, null, otherObject.firstChunk.pos, 10, 800f, 2f, thrownBy, new Color(0.8f, 0.8f, 1f)));
 
-                room.PlaySound(SoundID.Jelly_Fish_Tentacle_Stun, base.firstChunk.pos, Mathf.Max(stunScalar, 0.6f), 1);
+                room.PlaySound(SoundID.Jelly_Fish_Tentacle_Stun, base.firstChunk.pos, ministun ? 0.6f: 1f, 1);
                 room.AddObject(new Explosion.ExplosionLight(base.firstChunk.pos, 200f, 1f, 4, new Color(0.7f, 1f, 1f)));
                 for (int i = 0; i < 15; i++)
                 {
@@ -158,7 +167,10 @@ namespace ElectricRubbish
         {
             base.Grabbed(grasp);
             if (rubbishAbstract.electricCharge == 2)
-                Electrocute(grasp.grabber, 0.1f);
+            {
+                Electrocute(grasp.grabber, true);
+                grasp.Release();
+            }
         }
 
         public override void Thrown(Creature thrownBy, Vector2 thrownPos, Vector2? firstFrameTraceFromPos, IntVector2 throwDir, float frc, bool eu)

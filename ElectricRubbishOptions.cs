@@ -33,6 +33,8 @@ namespace ElectricRubbish
                 return LETHALITY.Shock_Only;
             }
         }
+        public static Configurable<bool> Strong_Grip;
+        public static bool StrongGrip => Strong_Grip.Value;
          
 
         public ElectricRubbishOptions()
@@ -40,6 +42,7 @@ namespace ElectricRubbish
             Percent_Rock_Replace_Rate = config.Bind<int>("Percent_Rock_Replace_Rate", 10, new ConfigurableInfo("When set to 1, all rubbish will be electrified."));
             All_Rubbish_Rechargable = config.Bind<bool>("All_Rubbish_Rechargable", false, new ConfigurableInfo("When true, all rubbish is converted into chargeable rubbish."));
             Overcharge_Lethality = config.Bind<string>("Overcharge_Lethality", "Kills Artificer", new ConfigAcceptableList<string>(new string[]{ "Shock Only", "Kills Artificer", "Kills Anything" }));
+            Strong_Grip = config.Bind<bool>("Strong_Grip", true);
         }
 
         public override void Initialize()
@@ -56,12 +59,16 @@ namespace ElectricRubbish
                 max = 100,
                 description = "Choose how often charged rubbish spawns instead of normal rubbish."
             };
-            OpLabel Label2 = new OpLabel(0f, 470f, "Recharge any Rubbish");
-            OpCheckBox checkbox = new OpCheckBox(All_Rubbish_Rechargable, new Vector2(0f, 440f));
+            OpLabel Label2 = new OpLabel(0f, 480f, "Recharge any Rubbish");
+            OpCheckBox checkbox = new OpCheckBox(All_Rubbish_Rechargable, new Vector2(0f, 450f));
             checkbox.description = "Any rubbish not charged at the start of a cycle can still be charged manually.";
 
-            OpLabel Label3 = new OpLabel(0f, 390f, "Mishandle Lethality");
-            OpListBox listbox = new OpListBox(Overcharge_Lethality, new Vector2(0f, 280f), 100, 3);
+            OpLabel Label4 = new OpLabel(00f, 410f, "Strong Grip");
+            OpCheckBox checkbox2 = new OpCheckBox(Strong_Grip, new Vector2(0f, 380f));
+            checkbox2.description = "Trying to pick up overcharged rubbish doesn't drop other held items. Spearmaster approved.";
+
+            OpLabel Label3 = new OpLabel(0f, 340f, "Mishandle Lethality");
+            OpListBox listbox = new OpListBox(Overcharge_Lethality, new Vector2(0f, 240f), 100, 3);
             listbox.description = "Choose how overcharged rubbish affects creatures that come into contact with it.";
             listbox._itemList[0].desc = "Stuns the creature for a short time.";
             listbox._itemList[1].desc = "Improper handling causes artificer to explode.";
@@ -70,7 +77,7 @@ namespace ElectricRubbish
 
             Tabs[0].AddItems(new UIelement[]
             {
-                    Label, slider, Label2, checkbox, Label3, listbox
+                    Label, slider, Label2, checkbox, Label4, checkbox2, Label3, listbox
             });
         }
     }
