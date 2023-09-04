@@ -6,8 +6,19 @@ namespace ElectricRubbish
 {
     public class ElectricRubbishOptions : OptionInterface
     {
+        #region impulse_mod_overrides
+        public static float replaceRateScalar = 1f;
+        #endregion
+
         public static Configurable<int> Percent_Rock_Replace_Rate;
-        public static float RockReplaceRate => Percent_Rock_Replace_Rate.Value / 100f;
+        public static float RockReplaceRate
+        {
+            get
+            {
+                return Percent_Rock_Replace_Rate.Value / 100f * replaceRateScalar;
+            }
+        }
+            
         public static Configurable<bool> All_Rubbish_Rechargable;
         public static bool AllRubbishRechargeable => All_Rubbish_Rechargable.Value;
         public enum LETHALITY
@@ -39,7 +50,7 @@ namespace ElectricRubbish
 
         public ElectricRubbishOptions()
         {
-            Percent_Rock_Replace_Rate = config.Bind<int>("Percent_Rock_Replace_Rate", 10, new ConfigurableInfo("When set to 1, all rubbish will be electrified."));
+            Percent_Rock_Replace_Rate = config.Bind<int>("Percent_Rock_Replace_Rate", 8, new ConfigurableInfo("When set to 1, all rubbish will be electrified."));
             All_Rubbish_Rechargable = config.Bind<bool>("All_Rubbish_Rechargable", false, new ConfigurableInfo("When true, all rubbish is converted into chargeable rubbish."));
             Overcharge_Lethality = config.Bind<string>("Overcharge_Lethality", "Kills Artificer", new ConfigAcceptableList<string>(new string[]{ "Shock Only", "Kills Artificer", "Kills Anything" }));
             Strong_Grip = config.Bind<bool>("Strong_Grip", true);
