@@ -3,6 +3,7 @@ using System;
 using UnityEngine;
 using RWCustom;
 using System.Collections.Generic;
+using MoreSlugcats;
 
 namespace ElectricRubbish
 {
@@ -11,7 +12,8 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electricrubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "1.3.2";
+        public const string PLUGIN_VERSION = "1.3.3";
+        public static string plugin_live_version => PLUGIN_VERSION;
 
         public OptionInterface config;
 
@@ -27,8 +29,40 @@ namespace ElectricRubbish
             On.Room.AddObject += AddObjHook;
             On.UpdatableAndDeletable.Destroy += DestroyHook;
             On.ScavengerAI.CollectScore_PhysicalObject_bool += ScavCollectScoreHook;
+            On.Player.SwallowObject += SwallowObjectHook;
 
             ElectricRubbishExtnum.RegisterValues();
+        }
+
+        //allow arti to treat electricrubbish like rocks for crafting
+        private void SwallowObjectHook(On.Player.orig_SwallowObject orig, Player self, int grasp)
+        {
+            if (grasp < 0 || self.grasps[grasp] == null) return;
+            AbstractPhysicalObject abstractPhysicalObject = self.grasps[grasp].grabbed.abstractPhysicalObject;
+            if (abstractPhysicalObject.type == ElectricRubbishExtnum.ElectricRubbishAbstract)
+            {
+                self.objectInStomach = abstractPhysicalObject;
+                if (ModManager.MMF && self.room.game.session is StoryGameSession)
+                    (self.room.game.session as StoryGameSession).RemovePersistentTracker(self.objectInStomach);
+                self.ReleaseGrasp(grasp);
+                self.objectInStomach.realizedObject.RemoveFromRoom();
+                self.objectInStomach.Abstractize(self.abstractCreature.pos);
+                self.objectInStomach.Room.RemoveEntity(self.objectInStomach);
+                if (ModManager.MSC && self.SlugCatClass == MoreSlugcatsEnums.SlugcatStatsName.Artificer && self.FoodInStomach > 0)
+                {
+                    abstractPhysicalObject = new AbstractPhysicalObject(self.room.world,
+                        AbstractPhysicalObject.AbstractObjectType.ScavengerBomb, null,
+                        self.room.GetWorldCoordinate(self.mainBodyChunk.pos), self.room.game.GetNewID());
+                    self.SubtractFood(1);
+                    self.objectInStomach = abstractPhysicalObject;
+                    self.objectInStomach.Abstractize(self.abstractCreature.pos);
+                }
+                BodyChunk mainBodyChunk = self.mainBodyChunk;
+                mainBodyChunk.vel.y = mainBodyChunk.vel.y + 2f;
+                self.room.PlaySound(SoundID.Slugcat_Swallow_Item, self.mainBodyChunk);
+            }
+            else
+                orig(self, grasp);
         }
 
         public void OnDisable()
