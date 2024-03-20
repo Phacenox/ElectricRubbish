@@ -12,7 +12,7 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electricrubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "1.3.3";
+        public const string PLUGIN_VERSION = "1.3.4";
         public static string plugin_live_version => PLUGIN_VERSION;
 
         public OptionInterface config;
@@ -58,7 +58,7 @@ namespace ElectricRubbish
                     self.objectInStomach.Abstractize(self.abstractCreature.pos);
                 }
                 BodyChunk mainBodyChunk = self.mainBodyChunk;
-                mainBodyChunk.vel.y = mainBodyChunk.vel.y + 2f;
+                mainBodyChunk.vel.y += 2f;
                 self.room.PlaySound(SoundID.Slugcat_Swallow_Item, self.mainBodyChunk);
             }
             else
@@ -120,7 +120,7 @@ namespace ElectricRubbish
             return orig(world, objString);
         }
 
-        List<EntityID> addedrocks = new List<EntityID>();
+        readonly List<EntityID> addedrocks = new List<EntityID>();
 
         private void AddObjHook(On.Room.orig_AddObject orig, Room self, UpdatableAndDeletable obj)
         {

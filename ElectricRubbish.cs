@@ -130,7 +130,8 @@ namespace ElectricRubbish
                         if (ElectricRubbishOptions.StrongGrip)
                             damageType = Creature.DamageType.Blunt;
                     }
-                    (otherObject as Creature).Violence(base.firstChunk, Custom.DirVec(base.firstChunk.pos, otherObject.firstChunk.pos) * 5f, otherObject.firstChunk, null, damageType, 0.1f, stun_duration);
+
+                    (otherObject as Creature).Violence(base.firstChunk, (otherObject.firstChunk.pos - base.firstChunk.pos).normalized * 5f, otherObject.firstChunk, null, damageType, 0.1f, stun_duration);
 
                     room.AddObject(new CreatureSpasmer(otherObject as Creature, allowDead: false, (otherObject as Creature).stun));
                 }
