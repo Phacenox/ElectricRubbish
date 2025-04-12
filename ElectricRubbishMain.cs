@@ -107,16 +107,23 @@ namespace ElectricRubbish
 
         private AbstractPhysicalObject SaveState_AbstractPhysicalObjectFromString(On.SaveState.orig_AbstractPhysicalObjectFromString orig, World world, string objString)
         {
-            //samples
-            //ID.- 341.4782 < oA > Spear < oA > SU_A24.4.15.1 < oA > 2 < oA > 0 < oA > 0 < oA > 0 < oA > 0 < oA > 0
-            //ID.- 1.4778 < oA > ElectricRubbishAbstract < oA > SU_S01.24.16.1 < oA > 2
-            var data = objString.Split(new[] { "<oA>" }, StringSplitOptions.None);
-            var type = data[1];
+            //Format: ID.-103.7068<oB>0<oA>ElectricRubbishAbstract<oA>DS_S02l.26.17.0<oA>1
+            var data = objString.Split(new[] { "<oA>", "<oB>" }, StringSplitOptions.None);
+            var type = data[2];
             if (type == "ElectricRubbishAbstract")
             {
-                int customData = data.Length >= 4 ? int.Parse(data[3]) : 0;
-                return new ElectricRubbishAbstract(world, WorldCoordinate.FromString(data[2]), EntityID.FromString(data[0]), customData);
+                int electricCharge = data.Length >= 5 ? int.Parse(data[4]) : 0;
+                return new ElectricRubbishAbstract(world, WorldCoordinate.FromString(data[3]), EntityID.FromString(data[0]), electricCharge);
             }
+            #region legacy parsing
+            //Format: ID.- 1.4778 < oA > ElectricRubbishAbstract < oA > SU_S01.24.16.1 < oA > 2
+            type = data[1];
+            if (type == "ElectricRubbishAbstract")
+            {
+                int electricCharge = data.Length >= 4 ? int.Parse(data[3]) : 0;
+                return new ElectricRubbishAbstract(world, WorldCoordinate.FromString(data[2]), EntityID.FromString(data[0]), electricCharge);
+            }
+            #endregion
             return orig(world, objString);
         }
 
