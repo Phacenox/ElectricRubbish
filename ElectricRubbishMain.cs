@@ -12,7 +12,7 @@ namespace ElectricRubbish
     {
         public const string PLUGIN_GUID = "phace.electricrubbish";
         public const string PLUGIN_NAME = "Electric Rubbish";
-        public const string PLUGIN_VERSION = "1.3.4";
+        public const string PLUGIN_VERSION = "1.3.5";
         public static string plugin_live_version => PLUGIN_VERSION;
 
         public OptionInterface config;
