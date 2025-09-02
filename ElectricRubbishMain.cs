@@ -32,9 +32,18 @@ namespace ElectricRubbish
             On.UpdatableAndDeletable.Destroy += DestroyHook;
             On.ScavengerAI.CollectScore_PhysicalObject_bool += ScavCollectScoreHook;
             On.Player.SwallowObject += SwallowObjectHook;
+            On.MoreSlugcats.GourmandCombos.GetLibraryData_AbstractObjectType_AbstractObjectType += GourmandCraftHook;
 
             ElectricRubbishExtnum.RegisterValues();
-            IL.MoreSlugcats.GourmandCombos.GetFilteredLibraryData += GourmandCraftingHookIL;
+        }
+
+        private GourmandCombos.CraftDat GourmandCraftHook(On.MoreSlugcats.GourmandCombos.orig_GetLibraryData_AbstractObjectType_AbstractObjectType orig, AbstractPhysicalObject.AbstractObjectType objectA, AbstractPhysicalObject.AbstractObjectType objectB)
+        {
+            if (objectA == ElectricRubbishExtnum.ElectricRubbishAbstract)
+                objectA = AbstractPhysicalObject.AbstractObjectType.Rock;
+            if (objectB == ElectricRubbishExtnum.ElectricRubbishAbstract)
+                objectB = AbstractPhysicalObject.AbstractObjectType.Rock;
+            return orig(objectA, objectB);
         }
 
         //allow arti to treat electricrubbish like rocks for crafting
@@ -78,32 +87,6 @@ namespace ElectricRubbish
             orig(self);
             config = new ElectricRubbishOptions();
             MachineConnector.SetRegisteredOI(PLUGIN_GUID, config);
-        }
-
-        delegate AbstractPhysicalObject.AbstractObjectType FixElectricRubbishDelegate(AbstractPhysicalObject.AbstractObjectType type);
-
-        static AbstractPhysicalObject.AbstractObjectType FixElectricRubbish(AbstractPhysicalObject.AbstractObjectType type)
-        {
-            return type == ElectricRubbishExtnum.ElectricRubbishAbstract ? AbstractPhysicalObject.AbstractObjectType.Rock : type;
-        }
-        private void GourmandCraftingHookIL(ILContext il)
-        {
-            try
-            {
-                ILCursor c = new ILCursor(il);
-                c.GotoNext(
-                    MoveType.After,
-                    x => x.Match(OpCodes.Stloc, 1)
-                );
-                c.MoveAfterLabels();
-                c.Emit(OpCodes.Ldloc, 0);
-                c.EmitDelegate<FixElectricRubbishDelegate>(FixElectricRubbish);
-                c.Emit(OpCodes.Stloc, 0);
-                c.Emit(OpCodes.Ldloc, 1);
-                c.EmitDelegate<FixElectricRubbishDelegate>(FixElectricRubbish);
-                c.Emit(OpCodes.Stloc, 1);
-            }
-            catch (Exception e) { Logger.LogDebug(e);}
         }
 
         private IconSymbol.IconSymbolData? ItemSymbol_SymbolDataFromItem(On.ItemSymbol.orig_SymbolDataFromItem orig, AbstractPhysicalObject item)
